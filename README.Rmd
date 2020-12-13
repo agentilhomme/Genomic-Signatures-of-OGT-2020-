@@ -1,0 +1,122 @@
+---
+title: "README"
+author: "Anais Gentilhomme"
+date: "11/26/2020"
+output: html_document
+---
+# **Project: Genomic Signatures of Optimal Growth Temperature in the Family Colwelliaceae**
+
+## **Installation**
+This is a list of initial documents, including a description and the specific file that are required for running the R codes listed below. All were written in R (version 3.6, R Core Team 2019). 
+
+### Raw Data & References
+1. File: *OD_Raw_Data.xlsx*  
+   Description: raw optical density dataset where one tab is the data and the other is the blank data
+
+2. File: *Literature Colwellia Growthrates.csv*  
+   Description: The growthrates taken for a variety of organisms from the literature (Corkrey et al. 2016)
+   
+3. File: *Amino Acid Info.txt*  
+   Description: Basic amino acid information
+
+4. File: *blast_CA_Colwelliaceae.txt*
+   Description: blast output of known cold-adaptation genes against Colwelliaceae annotated genomes. Can be produced via the *ubuntu pipeline.txt* file
+   
+### PATRIC Data
+  Genomes were submitted to the PATRIC web portal (https://patricbrc.org/, Wattam et al. 2016, version 3.6.3) for annotation using the RAST tool kit (RASTtk; Brettin et al. 2015; Davis et al. 2016). Files two through six can be produced using the *ubuntu pipeline.txt* file. 
+
+1. File: *Colwelliaceae Rooted Tree.nwk*  
+   Description: Phylogenetic tree produced via the phylogenetic tree service provided by patricbrc.org (Stamatakis 2014)
+
+2. File: *Colwelliaceae Rooted PATRIC Data.tsv*  
+   Description: PATRIC metadata for a specific genomic group. This file includes genomes to which the tree has been rooted to
+
+3. File: *Colwelliaceae UnRooted PATRIC Data.tsv*
+   Description: PATRIC metadata for a specific genomic group. This file includes genomes to which the tree has NOT been rooted to
+
+4. File: *Colwelliaceae PF Features.tsv*  
+   Description: PATRIC protein family features
+
+5. Files: *./Genomes*  
+   Description: folder containing all of the annotated genomes of interest. Annotated using the annotation service provided by patricbrc.org
+
+6. File: *Colwelliaceae_families_local.tsv*  
+   Description: PATRIC local protein family features
+
+7. File: *Colwelliaceae_families_global.tsv*  
+   Description: PATRIC global protein family features
+   
+## **R Codes**
+These codes have been organized depending on wether they are specificly related to the analysis of Colwelliaceae family or not. The *Plain Code* folder includes codes that are not based off the Colwelliaceae family and can be used for other genome groups. The *Colwelliaceae Specific Code* folder includes codes which can source from the original plain codes as they alter the formatting or codes that completely specific the the analysis of the Colwelliaceae family.  
+
+### 1. Calculating Growth Rates
+A. Type: Plain Code  
+   File: *Growthrates Calc.R*  
+   Description: This code calcualtes the maximum growth rates using optical density raw data via the 'growthrates' package (Petzoldt 2019, version 0.8.1) and outputs the file, *growthrates.tsv*.This code creates an xy plot of maximum growth rates by temperature tested for each strain as well as individual plots demonstrating the smoothing technique fit to find the maximum growth rate by strain, replicate, and temperature tested. 
+
+B. Type: Colwelliaceae  
+   File: *Growthrates-Colwelliaceae.R*  
+   Description: This code sources *Growthrates Calc.R* and formats specific Colwelliaceae names and converts optical density measurements to cell concentration measurements using the conversion equation created for Colwellia psychrerythreae 34H (Huston 2003). Outliers were identified and removed using the median absolute deviation with robust normalization and a threshold of seven. This code replaces the original *growthrates.tsv*.
+    
+Both codes, calculate the average and standard deviation of the growth rate by temperature tested as well as the average and standard devation of the growth rate by strain and temperature tested. 
+
+### 2. Calculating Optimal Growth Temperature by Strain
+A. Type: Plain Code  
+   File: *Strain OGT Ratkowsky Calc.R*  
+   Description: This code uses the growth rate data from *growthrates.tsv* along with the growth rates data supplied by the literature from *Literature Colwellia Growthrates.csv*.The genus name can be changed to search for other genera in the literature data. Growth rate as a function of temperature was parameterized by fitting the square root model of Ratkowsky et al. (1983). The model was fit using the package ‘minpack.lm’(Elzhov et al. 2016, version 1.2-1) and where uncertainties around parameter fits were estimated using a Monte Carlo approach.For each of 1000 iterations, the Ratkowsky model was fit and iterations with root mean square error (RSME) greater than 10−30) were discarded. The OGT for each strain was estimated as the median temperature at which the maximum growth rate was predicted from the remaining iterations. This code outputs a data frame with all of the unfiltered OGTs, and parameters by strain (*Strain Ratk OGT Outputs Raw.tsv*), a data frame of the filtered ratkowsky outputs (*Strain Ratk OGT Outputs Clean.tsv*), and a dataframe of the median OGTs per strain (*Strain Ratk OGT Final.tsv*). 
+
+B. Type: Colwelliaceae    
+   File: *Strain OGT Ratkowsky-Colwelliaceae.R*    
+   Description: This code sources *Strain oGT Ratkowsky Calc.R* and formats genome names to those listed within PATRIC. It replaces the file, *Strain Ratk OGT Final.tsv*. 
+
+### 3. Seperating the Phylogeny by Genera and OGT Phenotype
+A. Type: Colwelliaceae   
+   File: *Phylogenetic Clustering-Colwelliaceae.R*   
+   Description: This code uses manually identified nodes to split by genera (Main Clades) and OGT phenotype(Sub-Clades). It then calculates for each Main Clade and Sub-Clade, the pairwise differences, mean and standard deviation of the growth rates, and the mean and standard deviation of the OGT. It can create three different figures: an annotated phylogenetic tree of the Colwelliaceae family, a boxplot of the the OGTs by Sub-Clade, and a multi-paneled plot by temperature tested of the OGTs vs. growth rates for each respective strain, color coded to their Sub-Clade. It produces to core files, a dataframe identifying which Sub-Clade each strain belongs to (*Sub-Clade ID.tsv*), and a dataframe identifying which Main Clade each strain belongs to (*Main Clade ID.tsv*). 
+   
+### 4. Estimating Temperature Response Curves by Sub-Clade 
+A. Type: Colwelliaceae  
+   File: *Cluster OGT Ratkowsky Calc-Colwelliaceae.R*  
+   Description: This code uses the same principle as the *Strain OGT Ratkowsky Calc.R* code, but instead of strain, it uses the growth rates associated by Sub-Clade. It outputs four dataframes: a data frame of the raw parameter and OGT outputs(*Clade Ratk Params Raw.tsv*), a dataframe of the filtered parameters and OGT outputs (*Clade Ratk Params.tsv*), a dataframe of the median OGT outputs by Sub-Clade (*Clade Ratk Med Params.tsv*), and a dataframe of the standard deviation of the OGT outputs by Sub-Clade (*Clade Ratk SD Params.tsv*)
+   
+B. Type: Colwelliaceae   
+   File: *Cluster OGT Ratkowsky Analysis-Colwelliaceae.R*   
+   Description: This code plots the temperature response curves by invidual clade, by overlapping clades of iterest(e.g. Clade A2 and Clade A3), and overlapping all of the Sub-Clades.
+
+### 5. Calculating and Analysis Amino Acid Indices on a Protein Family or Whole-Genome Level
+A. Type: Plain Code  
+   File: *Amino Acid Indices Calc.R*  
+   Description: This code calculates each of the amino acid indices for each genome (*WG Indice Data.tsv*),for each protein with each genome (*Protein Indices Data.tsv*), and calculates each amino acid indices' mean and length for each PATRIC-identified global and local protein family (*Colwelliaceae PF AA Calc.RDS*). The length calculations of the the Arginine-Lysine Ratio for each global protein family is saved as an additional seperate file for future use (*Gene Presence.csv*)
+   
+B. Type: Colwelliaceae  
+   File: *Amino Acid Indices Analysis PF-Colwelliaceae.R*  
+   Description: This code analyzes the amino acid indices that was calculated by protein and protein family. It creates a distribution figure of amino acid indices by protein for each genome, volcano plots by amino acid indices and local/ global protein family, correlation plots of protein families whose amino acid index was significantly correlated to OGT, and a principle component analysis of the the amino acid indices by protein family, colored by Sub-Clade and OGT. It also creates a pangenome vs. core genome figure of the Colwelliaceae family.
+
+C. Type: Colwelliaceae  
+   File: *Amino Acid Indices Analysis Genome-Colwelliaceae.R*  
+   Description: This code analyzes the amino acid indices that was calculated by genome. It plots the amino acid ratio of each genome by their respective OGT for each amino acid ratio. Based off this figure and the finding that each amino acid ratio was significantly correlated to OGT, this code calculates the equation that can predict OGT based off of the whole genome amino acid ratio. It also calculates which combination of amino acid indices takes into account the most variation of the data and is the simplest. This equation, can therefore calculate the OGT of a genome based off of three amino acid indices: GRAVY, aliphatic index, and the acidic residue proportion. 
+
+### 6. Analyzing Clade A to Determine Proteins Associated with Cold Adaptation
+A. Type: Plain Code  
+   File: *Cold Adaptation Genes Calc.R*  
+   Description: This code creates a matrix of global protein families which contain an identified cold-adaptation gene for each Colwelliaceae genome of interest.  
+
+B. Type: Colwelliaceae
+   fILE: *Cold Adaptation Genes Analysis-Colwelliaceae.R*
+   Description: This code compares the cold-adaptation global protein families from two subclades within Clade A that had substantially different OGT: A2 and A3. It isolates those global protein families that were present in the cold Clade A2 but absent in the warmer Clade A3 and vice versa. 
+
+
+## **References** 
+
+Brettin T, Davis JJ, Disz T, et al (2015) RASTtk: A modular and extensible implementation of the RAST algorithm for building custom annotation pipelines and annotating batches of genomes. Sci Rep 5:. https://doi.org/10.1038/srep08365
+
+Corkrey R, McMeekin TA, Bowman JP, et al (2016) The biokinetic spectrum for temperature. PLoS One 11:e0153343. https://doi.org/10.1371/journal.pone.0153343
+
+Huston AL (2003) Bacterial adaptation to the cold : in situ activities of extracellular enzymes in the north water polynya and characterization of a cold-active aminopeptidase from Colwellia psychrerythraea strain 34H. Thesis (Ph. D.), University of Washington.
+
+Ratkowsky DA, Lowry RK, Mcmeekin TA, et al (1983) Model for bacterial culture growth rate throughout the entire biokinetic temperature range. J Bacteriol 154:1222–1226
+
+Stamatakis A (2014) RAxML version 8: A tool for phylogenetic analysis and post-analysis of large phylogenies. Bioinformatics 30:1312–1313. https://doi.org/10.1093/bioinformatics/btu033
+
+Wattam AR, Davis JJ, Assaf R, et al (2016) Improvements to PATRIC, the all-bacterial bioinformatics database and analysis resource center. Nucleic Acids Res 45:535–542. https://doi.org/10.1093/nar/gkw1017
+

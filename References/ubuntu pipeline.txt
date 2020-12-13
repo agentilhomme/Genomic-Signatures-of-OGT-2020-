@@ -1,0 +1,52 @@
+----------------------------------PATRIC Pipeline ------------------------------------------------------------------
+# your username here
+username=cryomics
+
+#login to PATRIC
+p3-login $username
+
+genome group = `name of group of interest`
+family = Colwelliaceae
+
+# File 2 or 3: get all genome metadata for given genus
+p3-get-genome-group ‘genome group’ | p3-get-genome-data > "$family"_Rooted_PATRIC_data.tsv
+
+p3-get-genome-group ‘genome group’ | p3-get-genome-data > "$family"_UnRooted_PATRIC_data.tsv
+
+OR
+
+p3-all-genomes --eq genus,$genus | p3-get-genome-data > "$family"_patric_data.tsv
+
+
+# File 4: get all genome features (protein families) for given group
+p3-get-genome-group ‘genome group’ | p3-get-genome-features --attr patric_id --attr pgfam_id --attr plfam_id --attr product --attr genome_name> Colwelliaceae_PF_Features.tsv
+
+OR
+
+p3-all-genomes --eq family,$family | p3-get-genome-features --attr patric_id,pgfam_id,plfam_id > "$family"_PF_features.tsv
+
+#Files 5: download fasta files of annotated genomes
+#make ids file
+p3-get-genome-group 'genome group' > "$family"_ids.txt
+
+#download fasta files
+while read line;do echo $line;p3-genome-fasta --protein $line > $line.faa; done < ../Genomes/"$family"_ids.txt
+			
+
+# File 6 & 7: get all protein family data
+cut -f3 "$genus"_features.tsv | sort -u | p3-get-family-data --nohead > "$family"_families_global.tsv
+cut -f4 "$genus"_features.tsv | sort -u | p3-get-family-data --nohead > "$family"_families_local.tsv
+
+-----------------------Cold-Adaptation Gene Blasting----------------------------------------------------------------------
+
+1. merge all cold-adaptation genes into one file. Assuming that all of them reside in one folder with no other files
+cat * > All.US.Data.faa
+
+Repeat the previous step to merge all of the annotated genomes into one file
+cat * > All.Data.faa
+
+2. blast the cold-adaptation genes against the annotated genomes
+p3-blast blastp All.Data.faa -i All.US.Data.faa --hsp --maxE 1e-5 > blast_CA_"$family".txt
+
+
+
